@@ -109,7 +109,11 @@ Reflection:
 This project shows that a set of four variables can explain over 90% of used car price variation when the right model is applied. The most surprising finding was how little fuel_type feature importance was compared to the other three variables because I thought that with the rise of EVs and hybrids, fuel type would be a strong differentiator, but we were wrong. If we decided to do more with this project, we would incorporate more features to account for the other 9% of variance and fine tune our model more to get even better numbers than what we have now. We would also experiment with larger, more geographically diverse datasets to improve generalization.
 
 References
-//NEED TO DO
+
+Alexa St. John, “New Vehicles Now Sell for an Average of Nearly $50,000,” PBS
+
+Eric Toan web-scraped dataset from Kelly blue Book https://www.kbb.com 
+
 AI Acknowledgement: Perplexity was used to troubleshoot errors and warning messages, and correct grammatical errors.
 
 
