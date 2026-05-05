@@ -1,0 +1,143 @@
+Final Project technical report:
+Josh Inacio, Ethan Eckenrode
+Dataset & Problem Framing 
+Dataset: Used Car Listings Dataset — 24,988 records of vehicle listings spanning model years 2001 through 2026, covering a wide range of brands, body types, and fuel types. This dataset was sourced independently from Eric Toan, who web scraped this dataset, which contains 68 total columns, including performance specs, dimensions, and feature availability flags
+Features:
+Brand — Vehicle manufacturer (categorical).
+Model Year — The year that vehicle was manufactured (continuous, Integer).
+HP — Horsepower of the engine (continuous)
+Fuel Type — Type of fuel the vehicle uses, ex: Gas, Electric, Diesel (categorical).
+Target: 
+Price — Listed sale price in USD (continuous, regression target).
+Price range after cleaning: 3,000 – $200,000 USD.
+Final dataset shape after preprocessing: 23,493 rows × 68 columns
+Research Question: To what extent can machine learning models use vehicle attributes (horsepower, model year, fuel type, brand) to accurately predict used car prices?
+Side Questions: 
+1.	How does horsepower affect price?
+2.	How much does model year affect price?
+3.	How does brand affect price?
+4.	How does fuel type affect price?
+5.	What is the most important feature for predicting price?
+Relevance: New cars are getting more and more expensive, and with so many people flocking to the used car market, a data‑driven model that can estimate a fair price based on important vehicle attributes can help consumers make more informed decisions when purchasing used cars.
+
+
+Data Preprocessing & Assumptions
+1.	Column Standardization: All columns were stripped of whitespace, lowercased, and special characters were replaced with underscores to help with consistency throughout the pipeline.
+
+2.	Type Conversion: the columns price, model_year, and hp were converted to numeric types to handle any mixed‑type entries, coercing invalid values to NaN.
+
+3.	Missing Value Handling: Rows missing any of the four core features were dropped using dropNA, ensuring that no imputed values distorted the key predictors.
+
+
+4.	Outlier Filtering: Rows with a listed price below 3,000 USD or above 200,000 USD were removed to eliminate likely data entry errors and extreme outliers that heavily skewed the data.
+
+5.	Feature Selection: Under the name main_features, the four core predictors — brand, model_year, hp, and fuel_type — were isolated from the full 68‑column dataset along with the target price.
+
+6.	Side questions: Under the names df_HP, df_year, df_brand, df_fuel, and df_importance, main features were isolated to answer the side questions.
+
+7.	Preprocessing Pipeline: A Column Transformer was applied with a sklearn pipeline:
+•	Numeric features (model_year, hp): Median imputation + StandardScaler
+•	Categorical features (brand, fuel_type): Most-frequent imputation + OneHotEncoder(handle_unknown='ignore')
+
+8.	Train/Test Split: An 80/20 split was applied using train_test_split with a random_state = 42. All models were evaluated on the same 20% test split.
+Key assumptions: We assume that our dataset reflects real‑world vehicle listings and that the listed price is a reasonable representation of market value at the time the data was collected.
+
+
+
+
+
+
+Model Selection & Experiments
+A.	Linear Regression
+•	Config: Default sklearn settings.
+•	Rationale: Serves as a linear baseline for comparison, allowing us to determine whether the four main features and price exhibit a sufficiently linear relationship before moving on to more complex random forest and gradient boosting models.
+B.	Random Forest Classifier
+•	Config: n_estimators = 300, max_features = 'sqrt', random_state = 42, n_jobs = -1.
+•	Rationale: Random forest is robust to outliers and capable of capturing nonlinear relationships. n_estimators = 300 helps ensure stable predictions, and max_features = 'sqrt' promotes diversity among trees and helps reduce overfitting. These settings are well suited to our dataset because brand is a complex categorical variable that has a relationship with price.
+C.	Gradient Boosting Classifier
+•	Config: n_estimators = 400, random_state = 42.
+•	Rationale: Gradient boosting builds trees sequentially, allowing errors from previous trees to be corrected. n_estimators = 400 allows the model to capture finer patterns in the data, and random_state = 42 ensures reproducibility. This model serves as a strong comparison point to determine whether sequential error correction outperforms random forest and also acts as a check that our data and preprocessing are on the right track.
+•	All models were trained on 80% of the data and evaluated on a held‑out 20% test set
+
+
+
+
+
+
+
+Performance Summary:
+Model	R²	MAE	RMSE
+Linear Regression	0.6891	$6,076.80	$10,176.45
+Random Forest	0.9102	$2,681.89	$5,470.98
+Gradient Boosting	0.8772	$3,371.31	$6,394.93
+
+Interpretation:
+•	Linear regression performed the worst of all the models, with an R² of about 0.69 and MAE and RMSE values significantly greater than those of random forest and gradient boosting. This confirms that price does not simply follow a linear relationship with the main features (brand, model year, and horsepower) and instead that these variables interact in more complex ways that are not fully captured by a linear model.
+•	Random forest greatly outperformed the linear regression baseline, reaching an R² score of about 0.91, an MAE of approximately 2,682 USD, and an RMSE of about 5,471 USD. These results indicate that the nonlinear interactions between brand, model year, and horsepower are very important and that tree‑based ensemble methods capture patterns in this dataset very effectively. An R² of 0.91 means that about 91% of the variation in used car prices is explained using only these four main variables.
+•	Gradient boosting also substantially outperformed the linear baseline but was still slightly worse than random forest. This suggests that, for this dataset, random forest’s ensemble strategy works better than gradient boosting’s sequential error‑correction approach.
+
+
+
+
+
+
+
+ Feature Importance (Random Forest)
+Rank	Feature	Importance
+1	Horsepower (HP)	0.4211
+2	Model Year	0.2922
+3	Brand: Porsche	0.1809
+4	Brand: Audi	0.0118
+5	Brand: Lexus	0.0076
+6	Brand: Nissan	0.0072
+7	Fuel Type: Gas	0.0057
+8	Fuel Type: Hybrid	0.0050
+9	Brand: BMW	0.0050
+10	Brand: Ford	0.0045
+•	The Feature importance analysis from the random forest model revealed that horsepower (HP) was the single strongest predictor of price, accounting for 42% of the model’s importance. Model year ranked second at 29%, confirming that newer vehicles are significantly higher in price than older ones. Together, these numeric features account for over 70% of the model’s importance, suggesting that they are the primary drivers of used car pricing.
+•	The brand Porsche ranked third at 18%, which stands out because it is the only brand with very substantial weight in the dataset. The remaining brands—Audi, Lexus, Nissan, BMW, and Ford—each contributed less than 1.2% individually, showing that outside of Porsche, brand alone is not a dominant predictor when horsepower and model year are included.
+•	Finally, overall fuel type had the least influence, suggesting that fuel type is not a major independent driver of price, although it still contributes a small amount.
+Side Question Findings:
+•	HP vs Price: there is positive correlation with Higher horsepower vehicles consistently being higher priced, though there is wide variance at the upper end of the range
+
+•	Model Year vs Price: a clear upward trend was observed with average prices rising sharply for recent model years, with an extreme jump from vehicles that are from 2018 or newer
+
+•	Brand vs Price: The 10 most expressive brands by average price were dominated by luxury and exotic brands, with the average price several times higher than regular brands.
+
+•	Fuel Type vs Price: Electric and premium-fuel vehicles were higher in price; standard gas vehicles showed the widest price range across the dataset.
+Limitations, Ethics, Reflection
+Limitations:
+1.	Feature Scope: Only four features were used for modeling. Many additional variables in the dataset—such as torque, drivetrain, body type, and reliability rating—were not included and likely account for much of the remaining unexplained variance.
+2.	Price type: The dataset reflects listed prices, not final sale or transaction prices. Actual sale prices may differ due to negotiation, dealer markups, or changing market conditions, so it is important to keep these factors in mind when interpreting the results.
+3.	Dataset time range: Vehicles from earlier model years (pre‑2010) may be underrepresented, which could introduce bias in the model year predictor toward more recent vehicles.
+4.	Web scraped Data: Because this dataset was web scraped, there may be inconsistencies in how different listing sources report features such as fuel type or horsepower.
+5.	Generalization: This model was trained on listings from a specific time period and geographic context and should not be expected to generalize reliably to other markets or future pricing conditions. It is better viewed as a tool to provide a general estimate rather than an exact valuation.
+
+
+
+Ethical Considerations
+Our model weighs brand heavily in price prediction, so it may encode and reinforce existing market biases—for example, confirming that certain manufacturers are “worth more” regardless of actual vehicle quality. If deployed in the real world, this could disadvantage buyers of lower‑cost used vehicles by making some brands appear more expensive or more desirable than they should be. Any real‑world application should include clear transparency about what the model can and cannot account for and should be tested and reviewed by multiple stakeholders before use.
+Reflection:
+This project shows that a set of four variables can explain over 90% of used car price variation when an appropriate model is applied. One surprising finding was how little importance fuel type had compared with the other three variables; given the rise of EVs and hybrids, we expected fuel type to be a stronger differentiator. If we were to extend this project, we would incorporate more features to account for the remaining variance and further tune our models to achieve even better performance. We would also experiment with larger and more geographically diverse datasets to improve generalization and robustness.
+References:
+Alexa St. John, “New Vehicles Now Sell for an Average of Nearly $50,000,” PBS
+Eric Toan web-scraped dataset from Kelly blue Book https://www.kbb.com
+Link for code and Tech Report: https://github.com/ececkenrode/techReportFinal2302.git
+Eric Toan GitHub: https://github.com/toannguyen58/Car-Recommendation-System/tree/main
+
+AI Acknowledgement: Perplexity was used to troubleshoot errors and warning messages and to correct grammatical errors.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
